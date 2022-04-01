@@ -1,18 +1,16 @@
 defmodule DLB.Server.Amnesia do
   defmodule Block do
-    defstruct worker: nil, expired_at: 0, is_expired: false
+    defstruct worker: nil, expired_at: 0
 
     @type t :: %__MODULE__{
             worker: pid,
-            expired_at: integer,
-            is_expired: boolean
+            expired_at: integer
           }
 
     def new(worker, ttl_in_ms) when is_pid(worker) and is_integer(ttl_in_ms) do
       %__MODULE__{
         worker: worker,
-        expired_at: System.os_time(:millisecond) + ttl_in_ms,
-        is_expired: false
+        expired_at: System.os_time(:millisecond) + ttl_in_ms
       }
     end
   end
@@ -33,6 +31,13 @@ defmodule DLB.Server.Amnesia do
     })
   end
 
+  def remove(amnesia, worker) when is_pid(worker) and is_struct(amnesia, __MODULE__) do
+    remove_expired_blocks(%{
+      amnesia
+      | blocks: amnesia.blocks |> Enum.filter(fn b -> b.worker != worker end)
+    })
+  end
+
   def select_worker(amnesia, n) when is_struct(amnesia, __MODULE__) and is_integer(n) do
     amnesia = remove_expired_blocks(amnesia)
     {amnesia, Enum.take_random(amnesia.blocks, n) |> Enum.map(fn b -> b.worker end)}
@@ -46,7 +51,7 @@ defmodule DLB.Server.Amnesia do
   defp remove_expired_blocks_recursive(now, ttl_in_ms, acc_blocks, [h | t])
        when is_integer(ttl_in_ms) and is_list(acc_blocks) and
               is_struct(h, __MODULE__.Block) do
-    if h.is_expired or h.expired_at < now do
+    if h.expired_at < now do
       remove_expired_blocks_recursive(now, ttl_in_ms, acc_blocks, t)
     else
       remove_expired_blocks_recursive(now, ttl_in_ms, [h | acc_blocks], t)

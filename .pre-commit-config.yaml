@@ -1,0 +1,7 @@
+repos:
+  - repo: https://gitlab.com/jvenom/elixir-pre-commit-hooks
+    rev: v1.2.0
+    hooks:
+      - id: mix-format
+      - id: mix-test
+

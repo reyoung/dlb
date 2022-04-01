@@ -13,5 +13,8 @@ defmodule DLB.Server.Amnesia.Test do
     assert a.blocks |> Enum.count() == 2
 
     assert Amnesia.select_worker(a, 1) == {a, [self()]}
+
+    a = Amnesia.remove(a, self())
+    assert a.blocks |> Enum.count() == 0
   end
 end
